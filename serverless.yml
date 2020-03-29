@@ -1,0 +1,64 @@
+service: chime-translate-service
+provider:
+  name: aws
+  runtime: nodejs12.x
+  stage: dev
+  region: us-east-2
+  iamManagedPolicies:
+    - arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess
+    - arn:aws:iam::aws:policy/TranslateFullAccess
+    
+package:
+  exclude:
+    - routes/**
+    - configuration/**
+  individually: true
+
+functions:
+  connect:
+    handler: routes/main.connect
+    package:
+      include:
+        - routes/main.js
+    events:
+      - websocket:
+          route: $connect
+
+  disconnect:
+    handler: routes/main.disconnect
+    include:
+      - routes/main.js
+    events:
+      - websocket:
+          route: $disconnect
+
+  message:
+    handler: routes/message_all.message
+    package:
+      include:
+        - routes/message_all.js
+        - configuration/initialize.js
+    events:
+      - websocket:
+          route: onCommand
+  join:
+    handler: routes/meeting.join
+    package:
+      include:
+        - routes/meeting.js
+        - configuration/initialize.js
+    events:
+      - websocket:
+          route: join
+  translate:
+    handler: routes/translate.translate
+    package:
+      include:
+        - routes/translate.js
+        - configuration/initialize.js
+    events:
+      - websocket:
+          route: trans
+
+plugins:
+  - serverless-offline
